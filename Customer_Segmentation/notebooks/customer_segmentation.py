@@ -42,4 +42,38 @@ df.info()
 print(df.shape)
 print(df['Churn'].value_counts(normalize=True))
 
+#EDA - Exploratory Data Analysis
+# Who is more likely to churn?
+# Which features strongly influence churn?
+# Are there any obvious patterns before ML?
+
+#Check target variable(Churn) distribution
+df['Churn'].value_counts                # To see if the dataset is imbalanced and also chrun problems are often more 'No' than 'Yes'
+# No >>> Yes class imbalance effects model choice and evaluation metrics
+
+# Churn percentage
+df['Churn'].value_counts(normalize = True)*100
+
+#Churn vs categorical features
+pd.crosstab(df['SeniorCitizen'], df['Churn'], normalize = 'index')*100
+
+#Churn vs Contract type
+pd.crosstab(df['Contract'], df['Churn'], normalize='index')*100     #month-to-month -> higher churn year/two-years -> lower churn
+
+#Churn vs Payment method
+pd.crosstab(df['PaymentMethod'], df['Churn'], normalize='index')*100    # EC->higher churn auto-payments -> lower churn
+
+#Churn vs neumeric features
+df.groupby('Churn')['MonthlyCharges'].mean()          # avg values for churned vs non-churned users churned users have higher montlhy charges
+
+# Tenure vs Churn
+df.groupby('Churn')['tenure'].mean()            # Low-tenure -> high churn
+
+# Contract type is a strong churn driver
+
+
+
+
+
+
 
