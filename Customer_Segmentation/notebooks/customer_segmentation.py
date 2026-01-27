@@ -1,6 +1,9 @@
 import pandas as pd 
 import numpy as np
 
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+
 df = pd.read_csv("data/WA_Fn-UseC_-Telco-Customer-Churn.csv")
 print(df.shape)
 df.info()
@@ -70,6 +73,40 @@ df.groupby('Churn')['MonthlyCharges'].mean()          # avg values for churned v
 df.groupby('Churn')['tenure'].mean()            # Low-tenure -> high churn
 
 # Contract type is a strong churn driver
+
+# Data Preprocessing
+# ML models cannot undeerstand text like "Yes" or "No"
+# Separate features(X) and target(Y) and convert categorical -> numeric
+# Scale numeric values and split into train & test sets
+
+# Define target and features
+X = df.drop('Churn', axis = 1)           # dropping churn left are all customer attributes
+y = df['Churn']                         # target variable
+
+# Drop customerID because identifier and no business use
+print(X.columns)
+X = X.drop('customerID', axis=1, errors='ignore')
+
+#Categorical vs numerical columns
+categorical_cols = X.select_dtypes(include = 'object').columns
+numerical_cols = X.select_dtypes(exclude = 'object').columns
+
+print(categorical_cols)
+print(numerical_cols)
+
+# Encode target variable because models need numbers not strings
+y = y.map({'No' : 0, 'Yes' : 1})
+
+#One-Hot Encode Categorical features
+X = pd.get_dummies(X, drop_first=True)           # each category becomes a column and dataset becomes fully numeric
+
+#Scale the numeric features --- some models like logistic regression and knn depend on scale
+scaler = StandardScaler()
+X[numerical_cols] = scaler.fit_transform(X[numerical_cols])
+
+# Test-train split  ---- to test the model on unseen data
+
+
 
 
 
