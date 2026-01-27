@@ -3,6 +3,8 @@ import numpy as np
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 df = pd.read_csv("data/WA_Fn-UseC_-Telco-Customer-Churn.csv")
 print(df.shape)
@@ -44,6 +46,8 @@ df.info()
 
 print(df.shape)
 print(df['Churn'].value_counts(normalize=True))
+
+df = df.dropna()
 
 #EDA - Exploratory Data Analysis
 # Who is more likely to churn?
@@ -105,6 +109,43 @@ scaler = StandardScaler()
 X[numerical_cols] = scaler.fit_transform(X[numerical_cols])
 
 # Test-train split  ---- to test the model on unseen data
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+# Building the churn model
+# Train the model
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)                 #relationship b/w customer_features and churn, optimizes coefficients using max likelihood
+
+# Make predictions
+y_pred = model.predict(X_test)              # 0-> No Churn 1-> Churn
+
+# Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+
+# print confusion matrix
+print(confusion_matrix(y_test, y_pred))
+
+# Logistic regression computes dot products     -- refuses NaN
+
+print(classification_report(y_test, y_pred))
+
+# Check feature importance(coefficients)
+feature_importance = pd.Series(
+    model.coef_[0],
+    index=X.columns
+).sort_values(ascending=False)
+print(feature_importance.head(10))
+
+print([c for c in X.columns if 'Contract' in c])
+
+print(feature_importance.loc[
+    feature_importance.index.str.contains('Contract')])     # -ve means one_year two_year less likely to churn month-to-month more likely
+
+                       
+
 
 
 
