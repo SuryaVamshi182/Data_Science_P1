@@ -1,10 +1,12 @@
 import pandas as pd 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.cluster import KMeans
 
 df = pd.read_csv("data/WA_Fn-UseC_-Telco-Customer-Churn.csv")
 print(df.shape)
@@ -144,7 +146,53 @@ print([c for c in X.columns if 'Contract' in c])
 print(feature_importance.loc[
     feature_importance.index.str.contains('Contract')])     # -ve means one_year two_year less likely to churn month-to-month more likely
 
-                       
+# Customer Segmentation (K-means clustering)
+# Churn -> Who might leave      # Segmentation -> which type of customers exist
+# Use behaviour+value features
+segmentation_features = df[[
+    'tenure',                   # Loyalty
+    'MonthlyCharges',           # Cost sensitivity
+    'TotalCharges'              # Lifetime value
+]]  
+
+# Scale the features
+scaler = StandardScaler()
+scaled_features = scaler.fit_transform(segmentation_features)  
+
+# Find optimal number of clusters       ------>  Elbow Clustering
+inertia = []
+
+for k in range(1,11):
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(scaled_features)
+    inertia.append(kmeans.inertia_)
+    
+plt.plot(range(1,11), inertia)
+plt.xlabel("Number of clusters")
+plt.ylabel("Inertia")
+plt.title("Elbow Method")
+plt.show()
+
+# Fit k-means with optmial k
+# Assume elbow at k=3
+kmeans = KMeans(n_clusters=3, random_state=42)
+df['Cluster'] = kmeans.fit_predict(scaled_features)         # After this each customer belongs to a segment
+
+# Analyse the clusters
+cluster_summary = df.groupby('Cluster')[[
+    'tenure',
+    'MonthlyCharges',
+    'TotalCharges'
+]].mean()
+
+print(cluster_summary)
+
+# Combine clusters with churn
+print(df.groupby('Cluster')['Churn'].value_counts(normalize=True))
+
+# Observe some clusters churn more while some are stable and valuable
+# Let us say cluster 1 customers have high churn risk and high monthly charges --- target them with discounts and contract upgrades
+# This clustering is unsupervised learning technique identifying homogenous customer groups based on behavioural and monetary features
 
 
 
