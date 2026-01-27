@@ -7,6 +7,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.cluster import KMeans
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_curve
 
 df = pd.read_csv("data/WA_Fn-UseC_-Telco-Customer-Churn.csv")
 print(df.shape)
@@ -194,6 +198,53 @@ print(df.groupby('Cluster')['Churn'].value_counts(normalize=True))
 # Let us say cluster 1 customers have high churn risk and high monthly charges --- target them with discounts and contract upgrades
 # This clustering is unsupervised learning technique identifying homogenous customer groups based on behavioural and monetary features
 
+#Extract and organize coefficients
+coef_df = pd.DataFrame({
+    'Feature': X.columns,
+    'Coefficient': model.coef_[0]
+})
+
+coef_df['Odds_Ratio'] = np.exp(coef_df['Coefficient'])
+
+coef_df.head(10)
+
+#Filter features by strength
+coef_df[coef_df['Odds_Ratio']>1]        #churn-increasing factors
+coef_df[coef_df['Odds_Ratio']<1]        #churn-reducing factors
+coef_df.sort_values('Odds_Ratio', ascending=False).head(10)
+
+#Coefficient > 0-increases churn coeff<0 - reduces churn odds ratio>1 - higher churn odds ratio < 1 - lower churn
+# Numbers -----> Business Insights
+coef_df.sort_values('Odds_Ratio', ascending=False).head(10)
+
+coef_df[coef_df['Feature'].str.contains('Contract')]            #Tenure captures customer commitment more directly
+
+
+# Model evaluation
+# Make predictions
+y_pred = model.predict(X_test)                 #final Yes/No prediction
+y_prob = model.predict_proba(X_test)[:,1]      #probability of churn
+
+# Confusion matrix
+cm = confusion_matrix(y_test, y_pred)
+
+# In churn false negatives are worst than false positives
+# Classification report
+print(classification_report(y_test, y_pred))
+
+#ROC-AUC Score
+auc = roc_auc_score(y_test, y_prob)
+print("ROC-AUC:", auc)
+
+#ROC Curve
+fpr, tpr, thresholds = roc_curve(y_test, y_prob)
+
+plt.plot(fpr, tpr)
+plt.plot([0,1], [0,1], linestyle='--')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve")
+plt.show()
 
 
 
