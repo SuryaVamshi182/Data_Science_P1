@@ -38,7 +38,15 @@ plt.xlabel("Year")
 plt.ylabel("Number of years")
 plt.show()
 
+# Data Cleaning
+# Is my time index reliable, continuous and trustwworthy for modeling
+# No missing time periods
+# No duplicate time stamps
+# No weird values, proper frequency alignment
 
+print(monthly_demand.index)
+print(monthly_demand.asfreq('MS'))
+print(monthly_demand.index.duplicated().sum())
 
 
 
