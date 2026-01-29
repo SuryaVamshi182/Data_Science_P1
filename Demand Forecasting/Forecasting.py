@@ -6,6 +6,9 @@
 # How often would you retrain the model      How would you trigger an alert
 import pandas as pd 
 import matplotlib.pyplot as plt
+from statsmodels.tsa.seasonal import seasonal_decompose
+from scipy.stats import zscore
+from sklearn.metrics import mean_absolute_error
 
 df = pd.read_csv("data/flights.csv")
 print(df.head())
@@ -115,6 +118,70 @@ plt.show()
 monthly_demand['flights'].hist(bins = 20)
 plt.title("Distribution of monthly flights")
 plt.show()              # expected ------> right-skewed, increasing center over time
+
+# Time-series decomposition
+# Is there a trend/seasonality and also what's left over(noise/anomolies)
+monthly_demand = monthly_demand.asfreq('MS')
+
+# Use moving averages instead of decomposition because decomposition needs atleast 2 cycles
+monthly_demand['rolling_3'] = monthly_demand['flights'].rolling(3).mean()
+
+plt.figure(figsize=(12,5))
+plt.plot(monthly_demand['flights'], label = 'Actual', marker = 'o')
+plt.plot(monthly_demand['rolling_3'], label = '3-month MA')
+
+plt.title("Monthly Flight Demand with Rolling averages")
+plt.ylabel("Number of flights")
+plt.legend()
+plt.show()
+
+# Anomaly detection (z-score)
+monthly_demand['z-score'] = zscore(monthly_demand['flights'])
+
+anomalies = monthly_demand[abs(monthly_demand['z-score']) > 2]
+print(anomalies)                # high-spikes ------> holidays, strikes, weather.  low dips -----> disruptions
+
+# Train-test split
+train = monthly_demand.iloc[:9]         # Jan-Sep
+test = monthly_demand.iloc[9:]          # Oct-Dec
+
+# Baseline forecasting
+test['naive_forecast'] = train['flights'].iloc[-1]
+test['ma_forecast'] = train['flights'].rolling(3).mean().iloc[-1]
+
+# Evaluation
+mae_naive = mean_absolute_error(test['flights'], test['naive_forecast'])
+mae_ma = mean_absolute_error(test['flights'], test['ma_forecast'])
+
+print("Naive MAE:", mae_naive)
+print("MA(3) MAE:", mae_ma)
+
+# Show actual demand, forecasted demand, where the model starts predicting, how confident we should be (qualitatively)
+plt.figure(figsize=(12,5))
+
+# Actuals
+plt.plot(monthly_demand.index, monthly_demand['flights'], label = "Actual", marker = 'o')
+
+# Naive forecast
+plt.plot(test.index, test['naive_forecast'], label = 'Naive Forecast', linestyle = '--')
+
+# Moving average forecast
+plt.plot(test.index, test['ma_forecast'], label = 'MA(3) Forecast', linestyle = '--')
+
+# Vertical line: forecast start
+plt.axvline(test.index[0], linestyle = ":", label = "Forecast start")
+
+plt.title("Flight Demand Forecast vs Actuals")
+plt.xlabel("Date")
+plt.ylabel("Number of flights")
+plt.legend()
+plt.show()
+
+
+
+
+
+
 
 
 
