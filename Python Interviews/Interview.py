@@ -73,3 +73,34 @@ def find_combination(k,n):
     print("(k:{}, n:{}):".format(k,n))
     print(list_num, "\n")
 print(find_combination(k,n))
+
+# Given a string return the first recurring character in it or "None" if there is no recurring character
+# Build a string of chars seen so far check if the char already appeared
+input_string = "pythoninterviewquestion"
+
+def first_recurring(input_string):
+    
+    vis_str = ""
+    for letter in input_string:
+        vis_str = vis_str + letter
+        if vis_str.count(letter) > 1:
+            return letter
+    return vis_str
+print(first_recurring(input_string))
+
+# Given a positive integer X return an integer that is factorial of X . If negative integer is provided, return -1. Implement the soultion
+# using recursive function
+x=5
+def factorial(x):
+    if x<0:
+        return -1
+    if x==0:
+        return 1
+    if x==1:
+        return x
+    else:
+        return x*factorial(x-1)
+print(factorial(x))
+    
+            
+
