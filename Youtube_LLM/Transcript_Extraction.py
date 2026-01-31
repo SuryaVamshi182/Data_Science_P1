@@ -3,10 +3,13 @@
 # Store it in a python structure -> list of chunks with timestamps      also legal since we are using public captions
 # Youtube-transcript-api    given a yt video id -> return transcript text
 import os
+import faiss
+import numpy as np
 
-from openai import OpenAI
-from youtube_transcript_api import YouTubeTranscriptApi     # no api-key-required # gives access to yt-caption-data
+from sentence_transformers import SentenceTransformer
+from youtube_transcript_api import YouTubeTranscriptApi
 
+embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Extract video-id from the url
 def extract_video_id(url):
@@ -67,18 +70,35 @@ print(chunks[0][:500])
 # openai's text-embedding-3-small or text-embedding-3-large
 # Generate Embeddings
 def get_embedding(text, model="text-embedding-3-small"):
-    response = client.embeddings.create(             # sends chunk to the embedding model
-        input = text,
-        model = model
-    )
-    return response.data[0].embedding        # a vector(list of numbers) representing the chunk
+    return embedding_model.encode(text)         # a vector(list of numbers) representing the chunk
 
 # Generate embeddings for all chunks
-chunk_embeddings = [get_embedding(chunk) for chunk in chunks]       # list of embeddings
+chunk_embeddings = embedding_model.encode(chunks)       # NumPy array
+
+dimension = chunk_embeddings.shape[1]
+
+index = faiss.IndexFlatL2(dimension)
+index.add(chunk_embeddings)
 
 # print("Number of embeddings created:", len(chunk_embeddings))
-print("Dimension of first embedding:", len(chunk_embeddings[0]))
-print("First 5 values of first embedding:", chunk_embeddings[0][:5])
+print("Total chunks indexed:", index.ntotal)
+
+# Retrieval function
+def retrieve_chunks(question, k=3):
+    question_embedding = embedding_model.encode([question])
+    distances, indices = index.search(question_embedding, k)
+    return [chunks[i] for i in indices[0]]
+
+# Test this function
+question = "How does India look from space?"
+retrieved = retrieve_chunks(question)
+
+print("Retrieved chunks:")
+for i, c in enumerate(retrieved, 1):
+    print(f"\nChunk {i}:\n{c[:200]}")
+
+
+
 
 
 
